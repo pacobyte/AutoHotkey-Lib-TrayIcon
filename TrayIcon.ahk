@@ -4,13 +4,14 @@
 ; AHK Version ...: AHK_L 1.1.22.02 x32/64 Unicode
 ; Original Author: Sean (http://goo.gl/dh0xIX) (http://www.autohotkey.com/forum/viewtopic.php?t=17314)
 ; Update Author .: Cyruz (http://ciroprincipe.info) (http://ahkscript.org/boards/viewtopic.php?f=6&t=1229)
-; Mod Author ....: Fanatic Guru
+; Mod Authors ...: Fanatic Guru, RiseUp
 ; License .......: WTFPL - http://www.wtfpl.net/txt/copying/
-; Version Date...: 2016 - 03 - 08
+; Version Date...: 2017 - 11 - 24
 ; Note ..........: Many people have updated Sean's original work including me but Cyruz's version seemed the most straight
 ; ...............: forward update for 64 bit so I adapted it with some of the features from my Fanatic Guru version.
 ; Update 20160120: Went through all the data types in the DLL and NumGet and matched them up to MSDN which fixed IDcmd.
 ; Update 20160308: Fix for Windows 10 NotifyIconOverflowWindow
+; Update 20171124: (RiseUp) Added extra Shell_TrayWnd to account for odd numbering (N) in ToolbarWindow32N
 ; ----------------------------------------------------------------------------------------------------------------------
 
 ; ----------------------------------------------------------------------------------------------------------------------
@@ -39,7 +40,7 @@ TrayIcon_GetInfo(sExeName := "")
 {
 	DetectHiddenWindows, % (Setting_A_DetectHiddenWindows := A_DetectHiddenWindows) ? "On" :
 	oTrayIcon_GetInfo := {}
-	For key, sTray in ["NotifyIconOverflowWindow", "Shell_TrayWnd"]
+	For key, sTray in ["NotifyIconOverflowWindow", "Shell_TrayWnd", "Shell_TrayWnd"]
 	{
 		idxTB := TrayIcon_GetTrayBar()
 		WinGet, pidTaskbar, PID, ahk_class %sTray%

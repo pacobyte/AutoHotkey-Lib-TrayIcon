@@ -1,1 +1,1 @@
-# AHK-TrayIcon-Library
+# AutoHotkey-Lib-TrayIcon

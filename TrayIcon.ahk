@@ -99,7 +99,7 @@ TrayIcon_GetInfo(sExeName := "")
 				oTrayIcon_GetInfo[Index,"Tray"]    := sTray
 			}
 		}
-		DllCall("VirtualFreeEx", Ptr, hProc, Ptr, pProc, UPtr, 0, Uint, 0x8000)
+		DllCall("VirtualFreeEx", Ptr, hProc, Ptr, pRB, UPtr, 0, Uint, 0x8000)
 		DllCall("CloseHandle", Ptr, hProc)
 	}
 	DetectHiddenWindows, %Setting_A_DetectHiddenWindows%

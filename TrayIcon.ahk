@@ -4,14 +4,15 @@
 ; AHK Version ...: AHK_L 1.1.22.02 x32/64 Unicode
 ; Original Author: Sean (http://goo.gl/dh0xIX) (http://www.autohotkey.com/forum/viewtopic.php?t=17314)
 ; Update Author .: Cyruz (http://ciroprincipe.info) (http://ahkscript.org/boards/viewtopic.php?f=6&t=1229)
-; Mod Authors ...: Fanatic Guru, RiseUp
+; Mod Author ....: Fanatic Guru
 ; License .......: WTFPL - http://www.wtfpl.net/txt/copying/
-; Version Date...: 2017 - 11 - 24
+; Version Date...: 2018 03 13
 ; Note ..........: Many people have updated Sean's original work including me but Cyruz's version seemed the most straight
 ; ...............: forward update for 64 bit so I adapted it with some of the features from my Fanatic Guru version.
 ; Update 20160120: Went through all the data types in the DLL and NumGet and matched them up to MSDN which fixed IDcmd.
 ; Update 20160308: Fix for Windows 10 NotifyIconOverflowWindow
-; Update 20171124: (RiseUp) Added extra Shell_TrayWnd to account for odd numbering (N) in ToolbarWindow32N
+; Update 20180313: Fix problem with "VirtualFreeEx" pointed out by nnnik
+; Update 20180313: Additional fix for previous Windows 10 NotifyIconOverflowWindow fix breaking non-hidden icons
 ; ----------------------------------------------------------------------------------------------------------------------
 
 ; ----------------------------------------------------------------------------------------------------------------------
@@ -40,18 +41,15 @@ TrayIcon_GetInfo(sExeName := "")
 {
 	DetectHiddenWindows, % (Setting_A_DetectHiddenWindows := A_DetectHiddenWindows) ? "On" :
 	oTrayIcon_GetInfo := {}
-	For key, sTray in ["NotifyIconOverflowWindow", "Shell_TrayWnd", "Shell_TrayWnd"]
+	For key, sTray in ["Shell_TrayWnd", "NotifyIconOverflowWindow"]
 	{
-		idxTB := TrayIcon_GetTrayBar()
+		idxTB := TrayIcon_GetTrayBar(sTray)
 		WinGet, pidTaskbar, PID, ahk_class %sTray%
 		
 		hProc := DllCall("OpenProcess", UInt, 0x38, Int, 0, UInt, pidTaskbar)
 		pRB   := DllCall("VirtualAllocEx", Ptr, hProc, Ptr, 0, UPtr, 20, UInt, 0x1000, UInt, 0x4)
 
-		if (SubStr(A_OSVersion,1,2)=10)
-			SendMessage, 0x418, 0, 0, ToolbarWindow32%key%, ahk_class %sTray%   ; TB_BUTTONCOUNT
-		else	
-			SendMessage, 0x418, 0, 0, ToolbarWindow32%idxTB%, ahk_class %sTray%   ; TB_BUTTONCOUNT
+		SendMessage, 0x418, 0, 0, ToolbarWindow32%idxTB%, ahk_class %sTray%   ; TB_BUTTONCOUNT
 		
 		szBtn := VarSetCapacity(btn, (A_Is64bitOS ? 32 : 20), 0)
 		szNfo := VarSetCapacity(nfo, (A_Is64bitOS ? 32 : 24), 0)
@@ -59,10 +57,7 @@ TrayIcon_GetInfo(sExeName := "")
 		
 		Loop, %ErrorLevel%
 		{
-			if (SubStr(A_OSVersion,1,2)=10)
-				SendMessage, 0x417, A_Index - 1, pRB, ToolbarWindow32%key%, ahk_class %sTray%   ; TB_GETBUTTON
-			else
-				SendMessage, 0x417, A_Index - 1, pRB, ToolbarWindow32%idxTB%, ahk_class %sTray%   ; TB_GETBUTTON
+			SendMessage, 0x417, A_Index - 1, pRB, ToolbarWindow32%idxTB%, ahk_class %sTray%   ; TB_GETBUTTON
 			DllCall("ReadProcessMemory", Ptr, hProc, Ptr, pRB, Ptr, &btn, UPtr, szBtn, UPtr, 0)
 
 			iBitmap := NumGet(btn, 0, "Int")
@@ -175,17 +170,17 @@ TrayIcon_Move(idxOld, idxNew, sTray := "Shell_TrayWnd")
 ; Function .....: TrayIcon_GetTrayBar
 ; Description ..: Get the tray icon handle.
 ; ----------------------------------------------------------------------------------------------------------------------
-TrayIcon_GetTrayBar()
+TrayIcon_GetTrayBar(Tray:="Shell_TrayWnd")
 {
 	DetectHiddenWindows, % (Setting_A_DetectHiddenWindows := A_DetectHiddenWindows) ? "On" :
-	WinGet, ControlList, ControlList, ahk_class Shell_TrayWnd
+	WinGet, ControlList, ControlList, ahk_class %Tray%
 	RegExMatch(ControlList, "(?<=ToolbarWindow32)\d+(?!.*ToolbarWindow32)", nTB)
 	Loop, %nTB%
 	{
-		ControlGet, hWnd, hWnd,, ToolbarWindow32%A_Index%, ahk_class Shell_TrayWnd
+		ControlGet, hWnd, hWnd,, ToolbarWindow32%A_Index%, ahk_class %Tray%
 		hParent := DllCall( "GetParent", Ptr, hWnd )
 		WinGetClass, sClass, ahk_id %hParent%
-		If (sClass <> "SysPager")
+		If !(sClass = "SysPager" or sClass = "NotifyIconOverflowWindow" )
 			Continue
 		idxTB := A_Index
 		Break
